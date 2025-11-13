@@ -1,0 +1,534 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Pokémon GO Wild Area Bingo</title>
+    <!-- Tailwind CSS --><script src="https://cdn.tailwindcss.com"></script>
+    <!-- Inter Font --><link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+            /* Grimmsnarl Theme: Dark Purple background */
+            background-color: #3C2B4F; /* Darker base purple from Grimmsnarl */
+            background-image: linear-gradient(135deg, #3C2B4F 0%, #251B32 100%);
+            color: white;
+        }
+
+        /* Grimmsnarl Cell: Slightly lighter purple with green border */
+        .grimsnarl-cell {
+            background-color: #57446E; /* A lighter purple for cells */
+            border-color: #61C5B6; /* Vibrant green from Grimmsnarl's accents - Consistent Border */
+            color: #E0E0E0; /* Off-white text */
+        }
+
+        /* Tamed State: Grimmsnarl Green */
+        .tamed {
+            background-color: #61C5B6 !important; /* Vibrant green from Grimmsnarl */
+            color: #3C2B4F !important; /* Dark purple text for contrast */
+            border-color: #FF70B8 !important; /* Pinkish accent from Grimmsnarl */
+            text-decoration: line-through;
+            transform: scale(1.03);
+            box-shadow: 0 0 15px rgba(97, 197, 182, 0.5); /* Green glow */
+            font-weight: 700;
+        }
+        
+        .bingo-cell {
+            transition: all 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+            position: relative;
+            aspect-ratio: 1 / 1; /* Ensure cells are square */
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            text-align: center;
+            line-height: 1.2; 
+        }
+
+        /* Confetti Canvas */
+        #confetti-canvas {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            pointer-events: none;
+            z-index: 1000;
+            display: none;
+        }
+
+        /* Win Modal */
+        #win-modal {
+            transition: opacity 0.3s ease-in-out, transform 0.3s ease-in-out;
+        }
+
+        /* Scrollbar for Trophy List */
+        ::-webkit-scrollbar {
+            width: 8px;
+        }
+        ::-webkit-scrollbar-track {
+            background: #3C2B4F; /* Dark purple scroll track */
+            border-radius: 4px;
+        }
+        ::-webkit-scrollbar-thumb {
+            background: #FF70B8; /* Pink scroll thumb */
+            border-radius: 4px;
+        }
+    </style>
+</head>
+<body class="p-4 md:p-8 min-h-screen">
+    <div class="max-w-7xl mx-auto">
+        <header class="text-center mb-8">
+            <h1 class="text-4xl md:text-5xl font-bold text-[#61C5B6] drop-shadow-lg">Pokémon GO Wild Area Bingo</h1>
+            <p class="text-lg md:text-xl text-[#FF70B8] mt-2 font-medium">Grimmsnarl Edition</p>
+            
+            <!-- Directions Text Box --><div class="bg-black/30 backdrop-blur-sm border border-[#61C5B6]/50 rounded-lg p-3 mx-auto mt-4 max-w-md text-xs sm:text-sm text-gray-200 shadow-md">
+                <p>Please screenshot achievements to validate your BINGO. Be ready to show your Community Ambassador your screenshots when claiming your reward.</p>
+            </div>
+            
+        </header>
+
+        <div class="grid grid-cols-1 lg:col-span-2 lg:grid-cols-3 gap-8">
+            
+            <!-- Bingo Board --><main class="lg:col-span-2 bg-black/40 backdrop-blur-md p-4 sm:p-6 rounded-2xl shadow-2xl border border-[#FF70B8]/50">
+                <div class="grid grid-cols-5 gap-2 md:gap-3">
+                    <!-- BINGO headers - N color changed --><div class="flex items-center justify-center text-2xl md:text-4xl font-bold text-[#FF70B8] drop-shadow-md">B</div>
+                    <div class="flex items-center justify-center text-2xl md:text-4xl font-bold text-[#FF70B8] drop-shadow-md">I</div>
+                    <div class="flex items-center justify-center text-2xl md:text-4xl font-bold text-[#FF70B8] drop-shadow-md">N</div>
+                    <div class="flex items-center justify-center text-2xl md:text-4xl font-bold text-[#FF70B8] drop-shadow-md">G</div>
+                    <div class="flex items-center justify-center text-2xl md:text-4xl font-bold text-[#FF70B8] drop-shadow-md">O</div>
+
+                    <!-- Bingo cells will be injected by JavaScript --></div>
+                <div id="bingo-grid" class="grid grid-cols-5 gap-2 md:gap-3 mt-3">
+                    <!-- JS will populate this --></div>
+                <button id="reset-board" class="mt-6 w-full bg-[#FF70B8] hover:bg-[#E0529A] text-white font-bold py-3 px-4 rounded-lg shadow-lg border border-[#D62E54] transition-all uppercase tracking-wider">
+                    Reset Board
+                </button>
+            </main>
+
+            <!-- Trophy Cabinet --><aside class="bg-black/40 backdrop-blur-md p-6 rounded-2xl shadow-2xl border border-[#FF70B8]/50">
+                <h2 class="text-3xl font-bold text-[#61C5B6] mb-4 border-b border-gray-700 pb-2">🏆 Trophy Cabinet</h2>
+                <ul id="trophy-list" class="space-y-3 max-h-96 overflow-y-auto pr-2">
+                    <!-- Trophies will be injected by JavaScript --></ul>
+                <button id="clear-trophies" class="mt-4 w-full bg-gray-800 hover:bg-gray-700 text-gray-300 font-bold py-2 px-4 rounded-lg shadow-sm transition-all border border-gray-600">
+                    Clear Trophies
+                </button>
+            </aside>
+        </div>
+    </div>
+
+    <!-- Confetti Canvas --><canvas id="confetti-canvas"></canvas>
+
+    <!-- Win Modal --><div id="win-modal" class="fixed inset-0 bg-black/70 flex items-center justify-center p-4 opacity-0 pointer-events-none transform scale-95 z-50">
+        <div class="bg-[#3C2B4F] border-2 border-[#61C5B6] p-8 rounded-2xl shadow-2xl text-center max-w-sm w-full relative overflow-hidden">
+            <!-- Decorative background glow --><div class="absolute top-0 left-0 w-full h-2 bg-gradient-to-r from-[#FF70B8] via-[#61C5B6] to-[#FF70B8]"></div>
+            
+            <h2 id="modal-title" class="text-4xl font-bold text-[#61C5B6] mb-4">BINGO!</h2>
+            <p id="modal-message" class="text-lg text-white mb-6">You've completed a line! Your achievement has been added to the Trophy Cabinet.</p>
+            <button id="modal-close" class="bg-[#FF70B8] hover:bg-[#E0529A] text-white font-bold py-3 px-6 rounded-lg w-full transition-all shadow-lg">
+                Awesome!
+            </button>
+        </div>
+    </div>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            const bingoGrid = document.getElementById('bingo-grid');
+            const trophyList = document.getElementById('trophy-list');
+            const resetBoardBtn = document.getElementById('reset-board');
+            const clearTrophiesBtn = document.getElementById('clear-trophies');
+            const modal = document.getElementById('win-modal');
+            const modalTitle = document.getElementById('modal-title');
+            const modalMessage = document.getElementById('modal-message');
+            const modalClose = document.getElementById('modal-close');
+            const canvas = document.getElementById('confetti-canvas');
+            const ctx = canvas.getContext('2d');
+
+            let boardState = [];
+            let trophies = [];
+            let achievedWins = {}; // Tracks wins for the current board
+
+            // Define the 24 tasks (Free Space is handled separately)
+            const tasks = [
+                "Defeat and catch a Grimmsnarl",
+                "Catch Shadow Cresselia or Shadow Darkrai",
+                "Follow a Route",
+                "Hatch a Pokémon from a 5km Egg",
+                "Catch 9 Different Species of Mighty Pokémon",
+                "Complete the Event Special Research to earn a Medal",
+                "Catch 30 3-star Pokémon",
+                "Catch Uxie, Mespirit, or Azelf*",
+                "Reach your daily collection limit of Max Particles",
+                "Win Rock, Paper, Scissors vs. a Community Ambassador",
+                "Pin a Postcard from a Community Ambassador PokéStop",
+                "Take an AR photo of your favorite Pokémon at Dunkin Donuts",
+                "Catch a Pokémon with 10 CP",
+                "Check into all Community Ambassador meetups on Campfire",
+                "Catch Unown W, I, L, and D", // UPDATED: Changed from "Catch a shiny family"
+                "Trade Pokémon with 5 different Trainers",
+                "Dress your Avatar to match your Buddy Pokémon",
+                "Catch 10 species of Fairy-type Pokémon",
+                "Find and catch a shiny Pokémon",
+                "Catch a Pokémon with 617 CP",
+                "Catch a Pokémon from a Raid with a Special Background",
+                "Have a Surprise Encounter in GO Snapshot",
+                "Catch 10 Species of Dark-type Pokémon",
+                "Earn at least 12 hearts with your Buddy"
+            ];
+
+            // --- Initialization ---
+
+            function initializeApp() {
+                loadTrophies();
+                setupNewBoard();
+                renderBoard();
+                renderTrophies();
+                setupListeners();
+            }
+
+            function setupNewBoard() {
+                // Try to load board from localStorage
+                const savedBoard = localStorage.getItem('bingoBoard');
+                const savedWins = localStorage.getItem('achievedWins');
+                
+                if (savedBoard && savedWins) {
+                    boardState = JSON.parse(savedBoard);
+                    achievedWins = JSON.parse(savedWins);
+                } else {
+                    // Create a new board
+                    boardState = shuffleArray(tasks).slice(0, 24);
+                    // Insert Free Space
+                    boardState.splice(12, 0, "FREE SPACE");
+                    
+                    boardState = boardState.map((task, index) => ({
+                        task: task,
+                        tamed: index === 12 // Free space is auto-tamed
+                    }));
+                    achievedWins = {};
+                    saveBoardState();
+                }
+            }
+            
+            function setupListeners() {
+                bingoGrid.addEventListener('click', handleCellClick);
+                resetBoardBtn.addEventListener('click', resetBoard);
+                clearTrophiesBtn.addEventListener('click', clearTrophies);
+                modalClose.addEventListener('click', hideWinModal);
+            }
+
+            // --- Board Rendering and State ---
+
+            function renderBoard() {
+                bingoGrid.innerHTML = '';
+                boardState.forEach((cell, index) => {
+                    const button = document.createElement('button');
+                    button.dataset.index = index;
+                    
+                    // Grimmsnarl Styling applied here
+                    // Font size: text-[10px] (mobile) to text-xs (desktop)
+                    button.className = `bingo-cell grimsnarl-cell p-1 md:p-2 text-[10px] sm:text-xs font-semibold rounded-lg shadow-sm border-2 cursor-pointer overflow-hidden hover:border-[#61C5B6]`;
+                    
+                    if (cell.task === "FREE SPACE") {
+                        // FREE SPACE styling and content
+                        button.classList.add('bg-[#FF70B8]', 'font-bold', 'text-white', 'border-[#61C5B6]', 'flex', 'items-center', 'justify-center');
+                        // Use a reliable, stable image URL for Grimmsnarl
+                        button.innerHTML = `
+                            <img src="https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/other/official-artwork/861.png" alt="Grimmsnarl" class="h-full w-auto object-contain">
+                        `;
+                    } else {
+                        // Standard task content
+                        button.textContent = cell.task;
+                    }
+
+                    if (cell.tamed) {
+                        button.classList.add('tamed');
+                    }
+                    
+                    bingoGrid.appendChild(button);
+                });
+            }
+
+            function handleCellClick(e) {
+                const cell = e.target.closest('button');
+                if (!cell) return;
+
+                const index = parseInt(cell.dataset.index);
+                if (boardState[index].task === "FREE SPACE") return; // Can't untame free space
+
+                // Toggle the 'tamed' state
+                boardState[index].tamed = !boardState[index].tamed;
+                
+                saveBoardState();
+                renderBoard();
+                checkWinConditions();
+            }
+
+            function resetBoard() {
+                // Use a custom modal instead of confirm()
+                showCustomConfirm('Reset the board? This will start a new card and clear current win progress.', () => {
+                    localStorage.removeItem('bingoBoard');
+                    localStorage.removeItem('achievedWins');
+                    setupNewBoard();
+                    renderBoard();
+                });
+            }
+            
+            function saveBoardState() {
+                localStorage.setItem('bingoBoard', JSON.stringify(boardState));
+                localStorage.setItem('achievedWins', JSON.stringify(achievedWins));
+            }
+
+            // --- Win Logic ---
+
+            function checkWinConditions() {
+                const size = 5;
+                const isTamed = (r, c) => boardState[r * size + c].tamed;
+
+                // Check Full Card first
+                if (boardState.every(cell => cell.tamed)) {
+                    if (!achievedWins.fullCard) {
+                        achievedWins.fullCard = true;
+                        triggerWin("Full Card Bingo");
+                    }
+                    return; // Stop checking if full card is won
+                }
+
+                let linesWon = [];
+
+                // Check Rows
+                for (let r = 0; r < size; r++) {
+                    if (Array.from({ length: size }, (_, c) => isTamed(r, c)).every(Boolean)) {
+                        if (!achievedWins[`row${r}`]) {
+                            achievedWins[`row${r}`] = true;
+                            linesWon.push("Single Line Bingo");
+                        }
+                    }
+                }
+
+                // Check Columns
+                for (let c = 0; c < size; c++) {
+                    if (Array.from({ length: size }, (_, r) => isTamed(r, c)).every(Boolean)) {
+                        if (!achievedWins[`col${c}`]) {
+                            achievedWins[`col${c}`] = true;
+                            linesWon.push("Column Bingo");
+                        }
+                    }
+                }
+
+                // Check Diagonals
+                if (Array.from({ length: size }, (_, i) => isTamed(i, i)).every(Boolean)) {
+                    if (!achievedWins.diag1) {
+                        achievedWins.diag1 = true;
+                        linesWon.push("Diagonal Bingo");
+                    }
+                }
+                if (Array.from({ length: size }, (_, i) => isTamed(i, size - 1 - i)).every(Boolean)) {
+                    if (!achievedWins.diag2) {
+                        achievedWins.diag2 = true;
+                        linesWon.push("Diagonal Bingo");
+                    }
+                }
+                
+                // Trigger win for the first new line detected
+                if (linesWon.length > 0) {
+                    triggerWin(linesWon[0]); 
+                }
+                
+                saveBoardState();
+            }
+
+            function triggerWin(winType) {
+                const newTrophy = {
+                    type: winType,
+                    date: new Date().toLocaleDateString('en-US', { year: 'numeric', month: 'short', day: 'numeric' })
+                };
+                trophies.push(newTrophy);
+                saveTrophies();
+                renderTrophies();
+
+                if (winType === "Full Card Bingo") {
+                    showWinModal("FULL CARD!", "You are a true Pokémon Master! This amazing feat is in your Trophy Cabinet!", true);
+                } else {
+                    showWinModal("BINGO!", "You've completed a line! Your achievement has been added to the Trophy Cabinet.", false);
+                }
+            }
+
+            function showWinModal(title, message, isFullCard) {
+                modalTitle.textContent = title;
+                modalMessage.textContent = message;
+                modal.classList.remove('opacity-0', 'pointer-events-none', 'scale-95');
+                modal.classList.add('opacity-100', 'scale-100');
+                
+                startConfetti(isFullCard);
+            }
+
+            function hideWinModal() {
+                modal.classList.add('opacity-0', 'pointer-events-none', 'scale-95');
+                modal.classList.remove('opacity-100', 'scale-100');
+            }
+
+            // --- Trophy Cabinet ---
+
+            function renderTrophies() {
+                trophyList.innerHTML = '';
+                if (trophies.length === 0) {
+                    trophyList.innerHTML = '<li class="text-gray-400 italic">No trophies yet. Start catching!</li>';
+                    return;
+                }
+                // Show most recent first
+                [...trophies].reverse().forEach(trophy => {
+                    const li = document.createElement('li');
+                    // Dark theme trophy list item
+                    li.className = 'flex items-center justify-between p-3 bg-[#57446E] rounded-lg border border-[#FF70B8]/30';
+                    li.innerHTML = `
+                        <span class="font-semibold ${trophy.type === 'Full Card Bingo' ? 'text-[#61C5B6]' : 'text-white'}">
+                            ${trophy.type === 'Full Card Bingo' ? '👑' : '🏆'} ${trophy.type}
+                        </span>
+                        <span class="text-sm text-gray-400">${trophy.date}</span>
+                    `;
+                    trophyList.appendChild(li);
+                });
+            }
+
+            function loadTrophies() {
+                trophies = JSON.parse(localStorage.getItem('bingoTrophies') || '[]');
+            }
+
+            function saveTrophies() {
+                localStorage.setItem('bingoTrophies', JSON.stringify(trophies));
+            }
+
+            function clearTrophies() {
+                showCustomConfirm('Clear your Trophy Cabinet? This cannot be undone.', () => {
+                    trophies = [];
+                    saveTrophies();
+                    renderTrophies();
+                });
+            }
+
+            // --- Utils ---
+
+            function shuffleArray(array) {
+                let currentIndex = array.length, randomIndex;
+                while (currentIndex != 0) {
+                    randomIndex = Math.floor(Math.random() * currentIndex);
+                    currentIndex--;
+                    [array[currentIndex], array[randomIndex]] = [
+                        array[randomIndex], array[currentIndex]];
+                }
+                return array;
+            }
+
+            // Custom Confirm Modal (Dark Theme)
+            function showCustomConfirm(message, onConfirm) {
+                if (document.getElementById('custom-confirm')) return;
+
+                const confirmModal = document.createElement('div');
+                confirmModal.id = 'custom-confirm';
+                confirmModal.className = 'fixed inset-0 bg-black/70 flex items-center justify-center p-4 z-[100]';
+                
+                confirmModal.innerHTML = `
+                    <div class="bg-[#3C2B4F] p-6 rounded-2xl shadow-2xl border border-[#FF70B8] max-w-sm w-full text-center">
+                        <p class="text-lg text-gray-200 mb-6">${message}</p>
+                        <div class="flex justify-center space-x-4">
+                            <button id="confirm-cancel" class="bg-gray-700 hover:bg-gray-600 text-white font-bold py-2 px-4 rounded-lg transition-all">
+                                Cancel
+                            </button>
+                            <button id="confirm-ok" class="bg-[#FF70B8] hover:bg-[#E0529A] text-white font-bold py-2 px-4 rounded-lg transition-all shadow-md">
+                                OK
+                            </button>
+                        </div>
+                    </div>
+                `;
+                
+                document.body.appendChild(confirmModal);
+
+                document.getElementById('confirm-ok').onclick = () => {
+                    onConfirm();
+                    document.body.removeChild(confirmModal);
+                };
+                
+                document.getElementById('confirm-cancel').onclick = () => {
+                    document.body.removeChild(confirmModal);
+                };
+            }
+
+            // --- Confetti Animation (Grimmsnarl Colors) ---
+            
+            let confettiPieces = [];
+            // Updated colors to match Grimmsnarl: Green, Pink, Dark Purple, Lighter Purple, White
+            const confettiColors = ['#61C5B6', '#FF70B8', '#3C2B4F', '#57446E', '#FFFFFF'];
+            let animationFrameId;
+
+            function startConfetti(isFullCard) {
+                canvas.style.display = 'block';
+                canvas.width = window.innerWidth;
+                canvas.height = window.innerHeight;
+                
+                confettiPieces = [];
+                const pieceCount = isFullCard ? 300 : 100;
+
+                for (let i = 0; i < pieceCount; i++) {
+                    confettiPieces.push(createConfettiPiece());
+                }
+
+                if (animationFrameId) {
+                    cancelAnimationFrame(animationFrameId);
+                }
+                animateConfetti();
+            }
+            
+            function createConfettiPiece() {
+                return {
+                    x: canvas.width / 2,
+                    y: canvas.height / 2,
+                    size: Math.random() * 8 + 5,
+                    color: confettiColors[Math.floor(Math.random() * confettiColors.length)],
+                    vx: Math.random() * 8 - 4,
+                    vy: Math.random() * -15 - 5, // Launch upwards
+                    rotation: Math.random() * 360,
+                    rotationSpeed: Math.random() * 20 - 10,
+                    opacity: 1,
+                    gravity: 0.2,
+                    drag: 0.98
+                };
+            }
+
+            function animateConfetti() {
+                ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+                confettiPieces = confettiPieces.filter(piece => piece.y < canvas.height && piece.opacity > 0);
+                
+                confettiPieces.forEach(piece => {
+                    piece.vy += piece.gravity;
+                    piece.vx *= piece.drag;
+                    
+                    piece.x += piece.vx;
+                    piece.y += piece.vy;
+                    
+                    piece.rotation += piece.rotationSpeed;
+                    piece.opacity -= 0.005; // Fade out slowly
+
+                    ctx.save();
+                    ctx.translate(piece.x + piece.size / 2, piece.y + piece.size / 2);
+                    ctx.rotate(piece.rotation * Math.PI / 180);
+                    ctx.globalAlpha = piece.opacity;
+                    ctx.fillStyle = piece.color;
+                    ctx.fillRect(-piece.size / 2, -piece.size / 2, piece.size, piece.size);
+                    ctx.restore();
+                });
+                
+                if (confettiPieces.length > 0) {
+                    animationFrameId = requestAnimationFrame(animateConfetti);
+                } else {
+                    canvas.style.display = 'none'; // Hide canvas when done
+                }
+            }
+
+            // Start the app
+            initializeApp();
+        });
+    </script>
+</body>
+</html>
